@@ -3,9 +3,12 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -17,11 +20,13 @@ var appFS embed.FS
 type Options struct {
 	Path string
 	Mod string
+	Meth string
 }
 
 func ParseOptions() (opts *Options) {
 	opts = new(Options)
 	flag.StringVar(&opts.Mod, "mod", "", "module name")
+	flag.StringVar(&opts.Meth, "meth", "", "overwrite gometh location")
 
 	flag.Parse()
 	opts.Path = flag.Arg(0)
@@ -35,12 +40,12 @@ func (opts *Options) PrepareDirectory() {
 	}
 }
 
-func PrepareProject(opts *Options) {
-}
-
 func RenderTemplates(opts *Options) error {
 	return fs.WalkDir(appFS, "app", func(path string, d fs.DirEntry, err error) error {
-		projectPath := filepath.Join(opts.Path, filepath.Clean(strings.TrimPrefix(path, "app/")))
+		if path == "app" {
+			return nil
+		}
+		projectPath := filepath.Join(opts.Path, filepath.Clean(strings.TrimSuffix(strings.TrimPrefix(path, "app/"), ".tmpl")))
 		if d.IsDir() {
 			return os.MkdirAll(projectPath, os.ModePerm)
 		}
@@ -52,7 +57,7 @@ func RenderTemplates(opts *Options) error {
 		if err != nil {
 			return err
 		}
-		projectFile, err := os.Open(projectPath)
+		projectFile, err := os.Create(projectPath)
 		if err != nil {
 			return err
 		}
@@ -68,8 +73,36 @@ func RenderTemplates(opts *Options) error {
 	})
 }
 
+func PrepareProject(opts *Options) error {
+	commands := [][]string{
+		{"go", "mod", "init", opts.Mod},
+	}
+	if opts.Meth != "" {
+		commands = append(commands, []string{"go", "mod", "edit", fmt.Sprintf("-replace=github.com/theaino/gometh=%s", opts.Meth)})
+	}
+	commands = append(commands, [][]string{
+		{"go", "mod", "tidy"},
+		{"yarn", "init", "-y"},
+		{"yarn", "add", "sass"},
+	}...)
+	for _, command := range commands {
+		cmd := exec.Command(command[0], command[1:]...)
+		cmd.Dir = opts.Path
+		if out, err := cmd.CombinedOutput(); err != nil {
+			log.Printf("%s:\n%s", strings.Join(command, " "), string(out))
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	opts := ParseOptions()
 	opts.PrepareDirectory()
-	RenderTemplates(opts)
+	if err := RenderTemplates(opts); err != nil {
+		log.Fatal(err)
+	}
+	if err := PrepareProject(opts); err != nil {
+		log.Fatal(err)
+	}
 }

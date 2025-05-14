@@ -1,6 +1,7 @@
 package meth
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/evanw/esbuild/pkg/api"
@@ -51,10 +52,13 @@ func (a *App) Route(f func(r *Router)) {
 	f(&a.router)
 }
 
-func (a *App) Run() error {
+func (a *App) Run() {
 	a.route()
 	if a.Conf.Build.Esbuild {
 		a.esbuild()
 	}
-	return a.fiber.Listen(a.Conf.Server.Host + ":" + a.Conf.Server.Port)
+	err := a.fiber.Listen(a.Conf.Server.Host + ":" + a.Conf.Server.Port)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
