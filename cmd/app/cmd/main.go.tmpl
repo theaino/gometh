@@ -1,0 +1,16 @@
+package main
+
+import (
+	"{{ .Mod }}/conf"
+
+	"github.com/theaino/gometh"
+)
+
+func main() {
+	app := new(meth.App)
+
+	app.Route(conf.Route)
+	app.Conf = conf.Conf
+
+	app.Run()
+}

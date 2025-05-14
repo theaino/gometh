@@ -1,0 +1,11 @@
+package conf
+
+import (
+	"{{ .Mod }}/views/home"
+
+	"github.com/theaino/gometh"
+)
+
+func Route(r *meth.Router) {
+	r.Get("/", home.Index)
+}

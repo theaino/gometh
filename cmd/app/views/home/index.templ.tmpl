@@ -1,0 +1,13 @@
+package home
+
+import (
+	"{{ .Mod }}/views"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+func Index(_ *fiber.Ctx) {
+	@views.Layout() {
+		<h1>Hello, World!</h1>
+	}
+}

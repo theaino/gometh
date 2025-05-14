@@ -1,0 +1,18 @@
+package conf
+
+import (
+	"github.com/theaino/gometh"
+)
+
+var Conf = meth.Conf{
+	Server: meth.ServerConf{
+		Host: "0.0.0.0",
+		Port: "3000",
+	},
+	Build: meth.BuildConf{
+		Esbuild: true,
+		Sass: true,
+		DistDir: "dist",
+		Entrypoints: []string{"assets/js/index.js"},
+	},
+}
